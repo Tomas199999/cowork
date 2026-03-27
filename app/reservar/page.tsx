@@ -13,11 +13,11 @@ import {
   Calendar,
   User,
   Phone,
-  Mail,
   MessageSquare,
+  AlertCircle,
 } from "lucide-react";
 
-const WHATSAPP_NUMBER = "5491140626107";
+const WHATSAPP_ANDREA = "5491158846186";
 
 const SPACES = [
   {
@@ -48,21 +48,6 @@ const SPACES = [
     desc: "Consultas y terapias alternativas",
     color: "rose",
   },
-];
-
-const TIME_SLOTS = [
-  "08:00",
-  "09:00",
-  "10:00",
-  "11:00",
-  "12:00",
-  "13:00",
-  "14:00",
-  "15:00",
-  "16:00",
-  "17:00",
-  "18:00",
-  "19:00",
 ];
 
 const colorClasses: Record<string, { selected: string; hover: string }> = {
@@ -100,21 +85,73 @@ function formatDateDisplay(dateStr: string) {
   });
 }
 
+function getDayOfWeek(dateStr: string): number {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.getDay(); // 0=domingo, 1=lunes, ..., 6=sábado
+}
+
+function getTimeSlotsForDay(dayOfWeek: number): string[] {
+  if (dayOfWeek === 0) return []; // Domingo cerrado
+  if (dayOfWeek === 6) {
+    // Sábado 10 a 15
+    return ["10:00", "11:00", "12:00", "13:00", "14:00"];
+  }
+  // Lunes a viernes 8 a 19
+  return [
+    "08:00", "09:00", "10:00", "11:00", "12:00",
+    "13:00", "14:00", "15:00", "16:00", "17:00", "18:00",
+  ];
+}
+
+function getBlockedSlots(dayOfWeek: number): { slots: string[]; reason: string }[] {
+  const blocked: { slots: string[]; reason: string }[] = [];
+
+  // Miércoles 15 a 19 - Oficina Técnica
+  if (dayOfWeek === 3) {
+    blocked.push({
+      slots: ["15:00", "16:00", "17:00", "18:00"],
+      reason: "Oficina Técnica",
+    });
+  }
+
+  // Viernes 19 a 20 - Yoga
+  if (dayOfWeek === 5) {
+    blocked.push({
+      slots: ["19:00"],
+      reason: "Yoga",
+    });
+  }
+
+  // Sábados - exclusivamente holística
+  if (dayOfWeek === 6) {
+    blocked.push({
+      slots: ["10:00", "11:00", "12:00", "13:00", "14:00"],
+      reason: "Exclusivo holística (con turno)",
+    });
+  }
+
+  return blocked;
+}
+
+function getDayNote(dayOfWeek: number): string | null {
+  if (dayOfWeek === 0) return "Domingos cerrado";
+  if (dayOfWeek === 3) return "Miércoles de 15 a 19: Oficina Técnica (no disponible)";
+  if (dayOfWeek === 5) return "Viernes 19 a 20: Yoga";
+  if (dayOfWeek === 6) return "Sábados: exclusivamente holística con turno previo";
+  return null;
+}
+
 export default function ReservarPage() {
   const [step, setStep] = useState(1);
   const [selectedSpace, setSelectedSpace] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
-  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
-    email: "",
     notes: "",
   });
-  const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState("");
 
   // Read espacio from URL on mount
   useEffect(() => {
@@ -125,28 +162,6 @@ export default function ReservarPage() {
       setStep(2);
     }
   }, []);
-
-  // Fetch booked slots when space and date change
-  useEffect(() => {
-    if (!selectedSpace || !selectedDate) return;
-
-    async function fetchBookings() {
-      try {
-        const res = await fetch(
-          `/api/bookings?spaceType=${selectedSpace}&date=${selectedDate}`
-        );
-        if (res.ok) {
-          const data = await res.json();
-          setBookedSlots(data.bookedSlots || []);
-        }
-      } catch {
-        // API not available, all slots available
-        setBookedSlots([]);
-      }
-    }
-
-    fetchBookings();
-  }, [selectedSpace, selectedDate]);
 
   function toggleSlot(slot: string) {
     setSelectedSlots((prev) =>
@@ -159,121 +174,29 @@ export default function ReservarPage() {
     return `${hour.toString().padStart(2, "0")}:00`;
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSubmitting(true);
-    setError("");
-
-    const space = SPACES.find((s) => s.key === selectedSpace);
-
-    try {
-      const res = await fetch("/api/bookings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          spaceType: selectedSpace,
-          date: selectedDate,
-          slots: selectedSlots,
-          clientName: formData.name,
-          clientEmail: formData.email,
-          clientPhone: formData.phone,
-          notes: formData.notes,
-        }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Error al crear la reserva");
-      }
-
-      setSuccess(true);
-    } catch {
-      // If API fails, redirect to WhatsApp as fallback
-      const slotsText = selectedSlots
-        .sort()
-        .map((s) => `${s} a ${getEndTime(s)}`)
-        .join(", ");
-      const msg = encodeURIComponent(
-        `Hola! Quiero reservar un turno en cowork.arquita:\n\n` +
-          `Espacio: ${space?.name}\n` +
-          `Fecha: ${formatDateDisplay(selectedDate)}\n` +
-          `Horarios: ${slotsText}\n` +
-          `Nombre: ${formData.name}\n` +
-          `Telefono: ${formData.phone}\n` +
-          (formData.notes ? `Notas: ${formData.notes}\n` : "")
-      );
-      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, "_blank");
-      setSuccess(true);
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  if (success) {
+  function handleWhatsApp() {
     const space = SPACES.find((s) => s.key === selectedSpace);
     const slotsText = selectedSlots
       .sort()
       .map((s) => `${s} a ${getEndTime(s)}`)
       .join(", ");
-    const whatsappMsg = encodeURIComponent(
-      `Hola! Reservé un turno en cowork.arquita:\n\n` +
-        `Espacio: ${space?.name}\n` +
-        `Fecha: ${formatDateDisplay(selectedDate)}\n` +
-        `Horarios: ${slotsText}\n` +
-        `Nombre: ${formData.name}\n` +
-        `Telefono: ${formData.phone}`
+    const msg = encodeURIComponent(
+      `Hola Andrea! Quiero reservar un turno en cowork.arquita:\n\n` +
+        `📍 Espacio: ${space?.name}\n` +
+        `📅 Fecha: ${formatDateDisplay(selectedDate)}\n` +
+        `🕐 Horarios: ${slotsText}\n` +
+        `👤 Nombre: ${formData.name}\n` +
+        `📞 Teléfono: ${formData.phone}\n` +
+        (formData.notes ? `📝 Notas: ${formData.notes}\n` : "")
     );
-
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center px-4">
-        <div className="text-center max-w-md">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle2 className="h-8 w-8 text-green-600" />
-          </div>
-          <h1 className="text-2xl font-bold mb-2">Reserva enviada!</h1>
-          <p className="text-gray-600 mb-2">
-            Tu solicitud de reserva fue registrada. Te confirmaremos a la
-            brevedad.
-          </p>
-          <div className="bg-gray-50 rounded-xl p-4 text-left text-sm mb-6">
-            <p>
-              <span className="font-medium">Espacio:</span> {space?.name}
-            </p>
-            <p>
-              <span className="font-medium">Fecha:</span>{" "}
-              {formatDateDisplay(selectedDate)}
-            </p>
-            <p>
-              <span className="font-medium">Horarios:</span> {slotsText}
-            </p>
-          </div>
-          <div className="flex flex-col gap-3">
-            <a
-              href={`https://wa.me/${WHATSAPP_NUMBER}?text=${whatsappMsg}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition font-medium inline-flex items-center justify-center gap-2"
-            >
-              Confirmar por WhatsApp
-            </a>
-            <button
-              onClick={() => {
-                setSuccess(false);
-                setStep(1);
-                setSelectedSpace(null);
-                setSelectedDate("");
-                setSelectedSlots([]);
-                setFormData({ name: "", phone: "", email: "", notes: "" });
-              }}
-              className="text-teal-600 font-medium hover:underline"
-            >
-              Hacer otra reserva
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    window.open(`https://wa.me/${WHATSAPP_ANDREA}?text=${msg}`, "_blank");
   }
+
+  const dayOfWeek = selectedDate ? getDayOfWeek(selectedDate) : -1;
+  const timeSlots = selectedDate ? getTimeSlotsForDay(dayOfWeek) : [];
+  const blockedInfo = selectedDate ? getBlockedSlots(dayOfWeek) : [];
+  const allBlockedSlots = blockedInfo.flatMap((b) => b.slots);
+  const dayNote = selectedDate ? getDayNote(dayOfWeek) : null;
 
   return (
     <div>
@@ -282,10 +205,25 @@ export default function ReservarPage() {
         <div className="container-custom">
           <h1 className="text-3xl font-bold mb-2">Reservar turno</h1>
           <p className="text-gray-300">
-            Selecciona tu espacio, dia y horario en simples pasos
+            Seleccioná tu espacio, día y horario. Se atiende siempre con cita previa.
           </p>
         </div>
       </section>
+
+      {/* Horarios generales */}
+      <div className="bg-teal-50 border-b border-teal-100">
+        <div className="container-custom py-3">
+          <div className="flex flex-wrap items-center gap-4 text-sm text-teal-800">
+            <div className="flex items-center gap-1.5">
+              <Clock className="h-4 w-4" />
+              <span className="font-medium">Horarios:</span>
+            </div>
+            <span>Lunes a Viernes: 8 a 19 hs</span>
+            <span>|</span>
+            <span>Sábados: 10 a 15 hs</span>
+          </div>
+        </div>
+      </div>
 
       {/* Progress */}
       <div className="bg-white border-b border-gray-200">
@@ -293,8 +231,8 @@ export default function ReservarPage() {
           <div className="flex items-center gap-4">
             {[
               { num: 1, label: "Espacio" },
-              { num: 2, label: "Dia y horario" },
-              { num: 3, label: "Datos de contacto" },
+              { num: 2, label: "Día y horario" },
+              { num: 3, label: "Confirmar por WhatsApp" },
             ].map((s, i) => (
               <div key={s.num} className="flex items-center gap-2">
                 {i > 0 && (
@@ -331,7 +269,7 @@ export default function ReservarPage() {
         {step === 1 && (
           <div>
             <h2 className="text-xl font-bold mb-6">
-              Que tipo de espacio necesitas?
+              ¿Qué tipo de espacio necesitás?
             </h2>
             <div className="grid sm:grid-cols-2 gap-4">
               {SPACES.map((space) => {
@@ -374,7 +312,7 @@ export default function ReservarPage() {
         {step === 2 && (
           <div>
             <h2 className="text-xl font-bold mb-6">
-              Elegí dia y horario
+              Elegí día y horario
             </h2>
 
             <div className="grid lg:grid-cols-2 gap-8">
@@ -394,6 +332,12 @@ export default function ReservarPage() {
                   }}
                   className="input"
                 />
+                {dayNote && (
+                  <div className="flex items-start gap-2 mt-3 text-sm text-amber-700 bg-amber-50 rounded-lg p-3">
+                    <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                    <span>{dayNote}</span>
+                  </div>
+                )}
               </div>
 
               {/* Time slots */}
@@ -411,20 +355,30 @@ export default function ReservarPage() {
                 </label>
                 {!selectedDate ? (
                   <p className="text-gray-400 text-sm py-4">
-                    Selecciona una fecha primero
+                    Seleccioná una fecha primero
                   </p>
+                ) : dayOfWeek === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                    <p className="font-medium">Domingos cerrado</p>
+                    <p className="text-sm">Elegí otro día</p>
+                  </div>
                 ) : (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                    {TIME_SLOTS.map((slot) => {
-                      const isBooked = bookedSlots.includes(slot);
+                    {timeSlots.map((slot) => {
+                      const isBlocked = allBlockedSlots.includes(slot);
+                      const blockReason = blockedInfo.find((b) =>
+                        b.slots.includes(slot)
+                      )?.reason;
                       const isSelected = selectedSlots.includes(slot);
                       return (
                         <button
                           key={slot}
-                          disabled={isBooked}
+                          disabled={isBlocked}
                           onClick={() => toggleSlot(slot)}
+                          title={isBlocked ? blockReason : undefined}
                           className={`py-2.5 px-3 rounded-lg text-sm font-medium transition-all ${
-                            isBooked
+                            isBlocked
                               ? "bg-gray-100 text-gray-400 cursor-not-allowed line-through"
                               : isSelected
                                 ? "bg-teal-600 text-white ring-2 ring-teal-600 ring-offset-1"
@@ -437,9 +391,9 @@ export default function ReservarPage() {
                     })}
                   </div>
                 )}
-                {selectedDate && (
+                {selectedDate && dayOfWeek !== 0 && (
                   <p className="text-xs text-gray-400 mt-2">
-                    Podes seleccionar multiples horarios. Los tachados ya estan reservados.
+                    Podés seleccionar múltiples horarios. Los tachados no están disponibles.
                   </p>
                 )}
               </div>
@@ -450,7 +404,7 @@ export default function ReservarPage() {
                 onClick={() => setStep(1)}
                 className="text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-100 transition font-medium inline-flex items-center gap-2"
               >
-                <ArrowLeft className="h-4 w-4" /> Atras
+                <ArrowLeft className="h-4 w-4" /> Atrás
               </button>
               <button
                 disabled={!selectedDate || selectedSlots.length === 0}
@@ -463,36 +417,37 @@ export default function ReservarPage() {
           </div>
         )}
 
-        {/* Step 3: Contact info */}
+        {/* Step 3: Confirm and send WhatsApp */}
         {step === 3 && (
           <div>
-            <h2 className="text-xl font-bold mb-6">Datos de contacto</h2>
+            <h2 className="text-xl font-bold mb-6">Confirmá y enviá por WhatsApp</h2>
 
             {/* Summary */}
-            <div className="bg-gray-50 rounded-xl p-4 mb-6">
-              <div className="flex flex-wrap gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">Espacio:</span>
+            <div className="bg-gray-50 rounded-xl p-5 mb-6">
+              <h3 className="font-semibold text-sm text-gray-500 uppercase mb-3">Resumen de tu reserva</h3>
+              <div className="space-y-2 text-sm">
+                <p>
+                  <span className="font-medium">Espacio:</span>{" "}
                   {SPACES.find((s) => s.key === selectedSpace)?.name}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">Fecha:</span>
+                </p>
+                <p>
+                  <span className="font-medium">Fecha:</span>{" "}
                   {formatDateDisplay(selectedDate)}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">Horarios:</span>
+                </p>
+                <p>
+                  <span className="font-medium">Horarios:</span>{" "}
                   {selectedSlots
                     .sort()
-                    .map((s) => `${s}-${getEndTime(s)}`)
+                    .map((s) => `${s} a ${getEndTime(s)}`)
                     .join(", ")}
-                </div>
+                </p>
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="max-w-lg space-y-4">
+            <div className="max-w-lg space-y-4">
               <div>
                 <label className="label flex items-center gap-2">
-                  <User className="h-4 w-4" /> Nombre completo *
+                  <User className="h-4 w-4" /> Tu nombre *
                 </label>
                 <input
                   type="text"
@@ -508,7 +463,7 @@ export default function ReservarPage() {
 
               <div>
                 <label className="label flex items-center gap-2">
-                  <Phone className="h-4 w-4" /> Telefono *
+                  <Phone className="h-4 w-4" /> Teléfono *
                 </label>
                 <input
                   type="tel"
@@ -524,22 +479,7 @@ export default function ReservarPage() {
 
               <div>
                 <label className="label flex items-center gap-2">
-                  <Mail className="h-4 w-4" /> Email
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
-                  className="input"
-                  placeholder="tu@email.com (opcional)"
-                />
-              </div>
-
-              <div>
-                <label className="label flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4" /> Notas
+                  <MessageSquare className="h-4 w-4" /> Notas (opcional)
                 </label>
                 <textarea
                   value={formData.notes}
@@ -547,13 +487,9 @@ export default function ReservarPage() {
                     setFormData({ ...formData, notes: e.target.value })
                   }
                   className="input min-h-[80px]"
-                  placeholder="Algun detalle adicional (opcional)"
+                  placeholder="Algún detalle adicional"
                 />
               </div>
-
-              {error && (
-                <p className="text-red-600 text-sm">{error}</p>
-              )}
 
               <div className="flex justify-between pt-4">
                 <button
@@ -561,18 +497,20 @@ export default function ReservarPage() {
                   onClick={() => setStep(2)}
                   className="text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-100 transition font-medium inline-flex items-center gap-2"
                 >
-                  <ArrowLeft className="h-4 w-4" /> Atras
+                  <ArrowLeft className="h-4 w-4" /> Atrás
                 </button>
                 <button
-                  type="submit"
-                  disabled={submitting || !formData.name || !formData.phone}
-                  className="bg-teal-600 text-white px-6 py-3 rounded-lg hover:bg-teal-700 transition font-medium disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-2"
+                  disabled={!formData.name || !formData.phone}
+                  onClick={handleWhatsApp}
+                  className="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition font-medium disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-2"
                 >
-                  {submitting ? "Enviando..." : "Confirmar reserva"}
-                  {!submitting && <CheckCircle2 className="h-4 w-4" />}
+                  Enviar por WhatsApp
+                  <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                  </svg>
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         )}
       </div>

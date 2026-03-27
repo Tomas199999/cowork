@@ -76,9 +76,115 @@ const colorClasses: Record<string, { selected: string; hover: string }> = {
   },
 };
 
-function getMinDate() {
+function getToday() {
   const d = new Date();
-  return d.toISOString().split("T")[0];
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function toDateStr(date: Date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function CalendarPicker({
+  value,
+  onChange,
+  saturdaysOnly,
+}: {
+  value: string;
+  onChange: (dateStr: string) => void;
+  saturdaysOnly: boolean;
+}) {
+  const today = getToday();
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+
+  const monthNames = [
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+  ];
+
+  const firstDay = new Date(viewYear, viewMonth, 1);
+  // Lunes = 0, Domingo = 6
+  let startDay = firstDay.getDay() - 1;
+  if (startDay < 0) startDay = 6;
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+  const cells: (Date | null)[] = [];
+  for (let i = 0; i < startDay; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(viewYear, viewMonth, d));
+
+  function prevMonth() {
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear(viewYear - 1);
+    } else {
+      setViewMonth(viewMonth - 1);
+    }
+  }
+
+  function nextMonth() {
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear(viewYear + 1);
+    } else {
+      setViewMonth(viewMonth + 1);
+    }
+  }
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-4 max-w-xs">
+      <div className="flex items-center justify-between mb-3">
+        <button onClick={prevMonth} className="p-1 hover:bg-gray-100 rounded text-gray-600">
+          <ArrowLeft className="h-4 w-4" />
+        </button>
+        <span className="font-semibold text-sm">
+          {monthNames[viewMonth]} {viewYear}
+        </span>
+        <button onClick={nextMonth} className="p-1 hover:bg-gray-100 rounded text-gray-600">
+          <ArrowRight className="h-4 w-4" />
+        </button>
+      </div>
+      <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-gray-500 mb-1">
+        <span>Lu</span><span>Ma</span><span>Mi</span><span>Ju</span><span>Vi</span><span>Sá</span><span>Do</span>
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {cells.map((date, i) => {
+          if (!date) return <div key={`empty-${i}`} />;
+          const dateStr = toDateStr(date);
+          const isPast = date < today;
+          const isSunday = date.getDay() === 0;
+          const isSaturday = date.getDay() === 6;
+          const disabled = isPast || isSunday || (saturdaysOnly && !isSaturday);
+          const isSelected = value === dateStr;
+
+          return (
+            <button
+              key={dateStr}
+              disabled={disabled}
+              onClick={() => onChange(dateStr)}
+              className={`py-1.5 rounded text-sm transition-all ${
+                isSelected
+                  ? "bg-teal-600 text-white font-bold"
+                  : disabled
+                    ? "text-gray-300 cursor-not-allowed"
+                    : saturdaysOnly && isSaturday
+                      ? "text-teal-700 font-semibold hover:bg-teal-100 bg-teal-50"
+                      : "text-gray-700 hover:bg-gray-100"
+              }`}
+            >
+              {date.getDate()}
+            </button>
+          );
+        })}
+      </div>
+      {saturdaysOnly && (
+        <p className="text-xs text-amber-600 mt-2 text-center">Solo sábados disponibles para Holística</p>
+      )}
+    </div>
+  );
 }
 
 function formatDateDisplay(dateStr: string) {
@@ -186,8 +292,7 @@ export default function ReservarPage() {
 
   const dayOfWeek = selectedDate ? getDayOfWeek(selectedDate) : -1;
   const isHolistica = selectedSpace === "holistica";
-  const holisticaConflict = isHolistica && selectedDate && dayOfWeek !== 6;
-  const timeSlots = selectedDate && !holisticaConflict ? getTimeSlotsForDay(dayOfWeek) : [];
+  const timeSlots = selectedDate ? getTimeSlotsForDay(dayOfWeek) : [];
   const blockedInfo = selectedDate ? getBlockedSlots(dayOfWeek) : [];
   const allBlockedSlots = blockedInfo.flatMap((b) => b.slots);
   const dayNote = selectedDate ? getDayNote(dayOfWeek) : null;
@@ -316,15 +421,13 @@ export default function ReservarPage() {
                   <Calendar className="h-4 w-4" />
                   Fecha
                 </label>
-                <input
-                  type="date"
-                  min={getMinDate()}
+                <CalendarPicker
                   value={selectedDate}
-                  onChange={(e) => {
-                    setSelectedDate(e.target.value);
+                  onChange={(dateStr) => {
+                    setSelectedDate(dateStr);
                     setSelectedSlots([]);
                   }}
-                  className="input"
+                  saturdaysOnly={isHolistica}
                 />
                 {dayNote && (
                   <div className="flex items-start gap-2 mt-3 text-sm text-amber-700 bg-amber-50 rounded-lg p-3">
@@ -351,12 +454,6 @@ export default function ReservarPage() {
                   <p className="text-gray-400 text-sm py-4">
                     Seleccioná una fecha primero
                   </p>
-                ) : holisticaConflict ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <AlertCircle className="h-8 w-8 mx-auto mb-2 text-amber-400" />
-                    <p className="font-medium">Holística solo está disponible los sábados</p>
-                    <p className="text-sm mt-1">Seleccioná un sábado para continuar</p>
-                  </div>
                 ) : dayOfWeek === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />

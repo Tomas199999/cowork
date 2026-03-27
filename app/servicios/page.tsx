@@ -9,7 +9,6 @@ import {
   Ruler,
   ClipboardCheck,
   ArrowRight,
-  CheckCircle2,
   Gauge,
   Plug,
   MessageCircle,

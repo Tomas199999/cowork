@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  password      String?
+  image         String?
+  role          String    @default("CLIENT")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  professional  Professional?
+  jobRequests   JobRequest[]   @relation("ClientRequests")
+  sentMessages  Message[]      @relation("SentMessages")
+  receivedMessages Message[]   @relation("ReceivedMessages")
+  reviews       Review[]
+  bookings      Booking[]
+
+  @@map("users")
+}
+
+model Professional {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  bio         String
+  category    String
+  experience  Int      @default(0)
+  hourlyRate  Float?
+  phone       String?
+  location    String?
+  available   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  services    Service[]
+  portfolio   PortfolioItem[]
+  jobRequests JobRequest[]
+  reviews     Review[]
+
+  @@map("professionals")
+}
+
+model Service {
+  id              String       @id @default(cuid())
+  professionalId  String
+  professional    Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  name            String
+  description     String
+  price           Float?
+  category        String
+  createdAt       DateTime     @default(now())
+
+  @@map("services")
+}
+
+model PortfolioItem {
+  id              String       @id @default(cuid())
+  professionalId  String
+  professional    Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  imageUrl        String?
+  createdAt       DateTime     @default(now())
+
+  @@map("portfolio_items")
+}
+
+model JobRequest {
+  id              String   @id @default(cuid())
+  clientId        String
+  client          User     @relation("ClientRequests", fields: [clientId], references: [id], onDelete: Cascade)
+  professionalId  String
+  professional    Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  serviceType     String
+  description     String
+  location        String
+  preferredDate   DateTime?
+  budget          Float?
+  status          String   @default("PENDING")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("job_requests")
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  senderId    String
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId  String
+  receiver    User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  content     String
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@map("messages")
+}
+
+model Review {
+  id              String       @id @default(cuid())
+  userId          String
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  professionalId  String
+  professional    Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  rating          Int
+  comment         String?
+  createdAt       DateTime     @default(now())
+
+  @@map("reviews")
+}
+
+model Space {
+  id           String    @id @default(cuid())
+  name         String
+  type         String
+  description  String
+  capacity     Int
+  pricePerHour Float     @default(0)
+  amenities    String    @default("[]")
+  imageUrl     String?
+  available    Boolean   @default(true)
+  bookings     Booking[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("spaces")
+}
+
+model Booking {
+  id          String   @id @default(cuid())
+  spaceId     String
+  space       Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  date        DateTime
+  startTime   String
+  endTime     String
+  clientName  String
+  clientEmail String
+  clientPhone String
+  notes       String?
+  status      String   @default("PENDING")
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("bookings")
+}

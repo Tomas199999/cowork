@@ -244,11 +244,31 @@ export default function ReservarPage() {
   const [selectedSpace, setSelectedSpace] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     notes: "",
   });
+
+  // Fetch booked slots when space and date change
+  useEffect(() => {
+    if (!selectedSpace || !selectedDate) return;
+    async function fetchBookings() {
+      try {
+        const res = await fetch(
+          `/api/bookings?spaceType=${selectedSpace}&date=${selectedDate}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setBookedSlots(data.bookedSlots || []);
+        }
+      } catch {
+        setBookedSlots([]);
+      }
+    }
+    fetchBookings();
+  }, [selectedSpace, selectedDate]);
 
   // Read espacio from URL on mount
   useEffect(() => {
@@ -271,8 +291,28 @@ export default function ReservarPage() {
     return `${hour.toString().padStart(2, "0")}:00`;
   }
 
-  function handleWhatsApp() {
+  async function handleWhatsApp() {
     const space = SPACES.find((s) => s.key === selectedSpace);
+
+    // Guardar reserva en la base de datos
+    try {
+      await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          spaceType: selectedSpace,
+          date: selectedDate,
+          slots: selectedSlots,
+          clientName: formData.name,
+          clientEmail: "",
+          clientPhone: formData.phone,
+          notes: formData.notes,
+        }),
+      });
+    } catch {
+      // Si falla la API, igual abrimos WhatsApp
+    }
+
     const slotsText = selectedSlots
       .sort()
       .map((s) => `${s} a ${getEndTime(s)}`)
@@ -294,7 +334,7 @@ export default function ReservarPage() {
   const isHolistica = selectedSpace === "holistica";
   const timeSlots = selectedDate ? getTimeSlotsForDay(dayOfWeek) : [];
   const blockedInfo = selectedDate ? getBlockedSlots(dayOfWeek) : [];
-  const allBlockedSlots = blockedInfo.flatMap((b) => b.slots);
+  const allBlockedSlots = [...blockedInfo.flatMap((b) => b.slots), ...bookedSlots];
   const dayNote = selectedDate ? getDayNote(dayOfWeek) : null;
 
   return (

@@ -52,7 +52,7 @@ const SPACES = [
     key: "holistica",
     icon: Heart,
     name: "Holística",
-    desc: "Terapias holísticas (sábados exclusivo)",
+    desc: "Terapias holísticas",
     color: "purple",
   },
 ];
@@ -122,22 +122,14 @@ function getBlockedSlots(dayOfWeek: number): { slots: string[]; reason: string }
     });
   }
 
-  // Viernes 19 a 20 - Yoga
-  if (dayOfWeek === 5) {
-    blocked.push({
-      slots: ["19:00"],
-      reason: "Yoga",
-    });
-  }
-
   return blocked;
 }
 
 function getDayNote(dayOfWeek: number): string | null {
   if (dayOfWeek === 0) return "Domingos cerrado";
   if (dayOfWeek === 3) return "Miércoles de 15 a 19: Oficina Técnica (no disponible)";
-  if (dayOfWeek === 5) return "Viernes 19 a 20: Yoga";
-  if (dayOfWeek === 6) return "Sábados: exclusivamente holística. Solo se puede reservar el espacio Holística.";
+  if (dayOfWeek === 5) return "Viernes 19 a 20: Yoga (fuera de horario de reservas)";
+  if (dayOfWeek === 6) return "Sábados: 10 a 15 hs. Se atiende con turno previo.";
   return null;
 }
 
@@ -189,15 +181,11 @@ export default function ReservarPage() {
         (formData.notes ? `📝 Notas: ${formData.notes}\n` : "")
     );
     window.open(`https://wa.me/${WHATSAPP_ANDREA}?text=${msg}`, "_blank");
+    window.location.href = "/";
   }
 
   const dayOfWeek = selectedDate ? getDayOfWeek(selectedDate) : -1;
-  const isSaturday = dayOfWeek === 6;
-  const isHolisticSpace = selectedSpace === "holistica";
-  const spaceConflict = selectedDate
-    ? (isSaturday && !isHolisticSpace) || (!isSaturday && isHolisticSpace)
-    : false;
-  const timeSlots = selectedDate && !spaceConflict ? getTimeSlotsForDay(dayOfWeek) : [];
+  const timeSlots = selectedDate ? getTimeSlotsForDay(dayOfWeek) : [];
   const blockedInfo = selectedDate ? getBlockedSlots(dayOfWeek) : [];
   const allBlockedSlots = blockedInfo.flatMap((b) => b.slots);
   const dayNote = selectedDate ? getDayNote(dayOfWeek) : null;
@@ -366,27 +354,6 @@ export default function ReservarPage() {
                     <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                     <p className="font-medium">Domingos cerrado</p>
                     <p className="text-sm">Elegí otro día</p>
-                  </div>
-                ) : spaceConflict ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <AlertCircle className="h-8 w-8 mx-auto mb-2 text-amber-400" />
-                    {isSaturday && !isHolisticSpace ? (
-                      <>
-                        <p className="font-medium">Los sábados son exclusivamente para holística</p>
-                        <p className="text-sm mt-1">Volvé al paso anterior y seleccioná el espacio &quot;Holística&quot;</p>
-                      </>
-                    ) : (
-                      <>
-                        <p className="font-medium">El espacio Holística solo está disponible los sábados</p>
-                        <p className="text-sm mt-1">Elegí un sábado o volvé al paso anterior y seleccioná otro espacio</p>
-                      </>
-                    )}
-                    <button
-                      onClick={() => { setStep(1); setSelectedSpace(null); }}
-                      className="mt-4 text-teal-600 font-medium hover:underline text-sm"
-                    >
-                      Cambiar espacio
-                    </button>
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">

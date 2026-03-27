@@ -279,12 +279,12 @@ export default function ReservarPage() {
       .join(", ");
     const msg = encodeURIComponent(
       `Hola Andrea! Quiero reservar un turno en cowork.arquita:\n\n` +
-        `📍 Espacio: ${space?.name}\n` +
-        `📅 Fecha: ${formatDateDisplay(selectedDate)}\n` +
-        `🕐 Horarios: ${slotsText}\n` +
-        `👤 Nombre: ${formData.name}\n` +
-        `📞 Teléfono: ${formData.phone}\n` +
-        (formData.notes ? `📝 Notas: ${formData.notes}\n` : "")
+        `Espacio: ${space?.name}\n` +
+        `Fecha: ${formatDateDisplay(selectedDate)}\n` +
+        `Horarios: ${slotsText}\n` +
+        `Nombre: ${formData.name}\n` +
+        `Telefono: ${formData.phone}\n` +
+        (formData.notes ? `Notas: ${formData.notes}\n` : "")
     );
     window.open(`https://wa.me/${WHATSAPP_ANDREA}?text=${msg}`, "_blank");
     window.location.href = "/";

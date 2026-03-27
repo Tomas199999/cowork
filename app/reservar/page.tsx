@@ -185,7 +185,9 @@ export default function ReservarPage() {
   }
 
   const dayOfWeek = selectedDate ? getDayOfWeek(selectedDate) : -1;
-  const timeSlots = selectedDate ? getTimeSlotsForDay(dayOfWeek) : [];
+  const isHolistica = selectedSpace === "holistica";
+  const holisticaConflict = isHolistica && selectedDate && dayOfWeek !== 6;
+  const timeSlots = selectedDate && !holisticaConflict ? getTimeSlotsForDay(dayOfWeek) : [];
   const blockedInfo = selectedDate ? getBlockedSlots(dayOfWeek) : [];
   const allBlockedSlots = blockedInfo.flatMap((b) => b.slots);
   const dayNote = selectedDate ? getDayNote(dayOfWeek) : null;
@@ -349,6 +351,12 @@ export default function ReservarPage() {
                   <p className="text-gray-400 text-sm py-4">
                     Seleccioná una fecha primero
                   </p>
+                ) : holisticaConflict ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <AlertCircle className="h-8 w-8 mx-auto mb-2 text-amber-400" />
+                    <p className="font-medium">Holística solo está disponible los sábados</p>
+                    <p className="text-sm mt-1">Seleccioná un sábado para continuar</p>
+                  </div>
                 ) : dayOfWeek === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />

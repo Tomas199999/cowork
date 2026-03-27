@@ -48,6 +48,13 @@ const SPACES = [
     desc: "Consultas y terapias alternativas",
     color: "rose",
   },
+  {
+    key: "holistica",
+    icon: Heart,
+    name: "Holística",
+    desc: "Terapias holísticas (sábados exclusivo)",
+    color: "purple",
+  },
 ];
 
 const colorClasses: Record<string, { selected: string; hover: string }> = {
@@ -94,10 +101,10 @@ function getDayOfWeek(dateStr: string): number {
 function getTimeSlotsForDay(dayOfWeek: number): string[] {
   if (dayOfWeek === 0) return []; // Domingo cerrado
   if (dayOfWeek === 6) {
-    // Sábado 10 a 15
+    // Sábado 10 a 15 (último turno 14:00 a 15:00)
     return ["10:00", "11:00", "12:00", "13:00", "14:00"];
   }
-  // Lunes a viernes 8 a 19
+  // Lunes a viernes 8 a 19 (último turno 18:00 a 19:00)
   return [
     "08:00", "09:00", "10:00", "11:00", "12:00",
     "13:00", "14:00", "15:00", "16:00", "17:00", "18:00",
@@ -123,14 +130,6 @@ function getBlockedSlots(dayOfWeek: number): { slots: string[]; reason: string }
     });
   }
 
-  // Sábados - exclusivamente holística
-  if (dayOfWeek === 6) {
-    blocked.push({
-      slots: ["10:00", "11:00", "12:00", "13:00", "14:00"],
-      reason: "Exclusivo holística (con turno)",
-    });
-  }
-
   return blocked;
 }
 
@@ -138,7 +137,7 @@ function getDayNote(dayOfWeek: number): string | null {
   if (dayOfWeek === 0) return "Domingos cerrado";
   if (dayOfWeek === 3) return "Miércoles de 15 a 19: Oficina Técnica (no disponible)";
   if (dayOfWeek === 5) return "Viernes 19 a 20: Yoga";
-  if (dayOfWeek === 6) return "Sábados: exclusivamente holística con turno previo";
+  if (dayOfWeek === 6) return "Sábados: exclusivamente holística. Solo se puede reservar el espacio Holística.";
   return null;
 }
 
@@ -193,7 +192,12 @@ export default function ReservarPage() {
   }
 
   const dayOfWeek = selectedDate ? getDayOfWeek(selectedDate) : -1;
-  const timeSlots = selectedDate ? getTimeSlotsForDay(dayOfWeek) : [];
+  const isSaturday = dayOfWeek === 6;
+  const isHolisticSpace = selectedSpace === "holistica";
+  const spaceConflict = selectedDate
+    ? (isSaturday && !isHolisticSpace) || (!isSaturday && isHolisticSpace)
+    : false;
+  const timeSlots = selectedDate && !spaceConflict ? getTimeSlotsForDay(dayOfWeek) : [];
   const blockedInfo = selectedDate ? getBlockedSlots(dayOfWeek) : [];
   const allBlockedSlots = blockedInfo.flatMap((b) => b.slots);
   const dayNote = selectedDate ? getDayNote(dayOfWeek) : null;
@@ -362,6 +366,27 @@ export default function ReservarPage() {
                     <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                     <p className="font-medium">Domingos cerrado</p>
                     <p className="text-sm">Elegí otro día</p>
+                  </div>
+                ) : spaceConflict ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <AlertCircle className="h-8 w-8 mx-auto mb-2 text-amber-400" />
+                    {isSaturday && !isHolisticSpace ? (
+                      <>
+                        <p className="font-medium">Los sábados son exclusivamente para holística</p>
+                        <p className="text-sm mt-1">Volvé al paso anterior y seleccioná el espacio &quot;Holística&quot;</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-medium">El espacio Holística solo está disponible los sábados</p>
+                        <p className="text-sm mt-1">Elegí un sábado o volvé al paso anterior y seleccioná otro espacio</p>
+                      </>
+                    )}
+                    <button
+                      onClick={() => { setStep(1); setSelectedSpace(null); }}
+                      className="mt-4 text-teal-600 font-medium hover:underline text-sm"
+                    >
+                      Cambiar espacio
+                    </button>
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">

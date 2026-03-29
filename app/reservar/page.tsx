@@ -243,6 +243,8 @@ export default function ReservarPage() {
   const [step, setStep] = useState(1);
   const [selectedSpace, setSelectedSpace] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState("");
+  const [selectedStart, setSelectedStart] = useState<string>("");
+  const [selectedHours, setSelectedHours] = useState<number>(3);
   const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [formData, setFormData] = useState({
@@ -280,16 +282,36 @@ export default function ReservarPage() {
     }
   }, []);
 
-  function toggleSlot(slot: string) {
-    setSelectedSlots((prev) =>
-      prev.includes(slot) ? prev.filter((s) => s !== slot) : [...prev, slot]
-    );
+  function getSlotsFromStart(start: string, hours: number): string[] {
+    const startHour = parseInt(start.split(":")[0]);
+    const slots: string[] = [];
+    for (let i = 0; i < hours; i++) {
+      slots.push(`${(startHour + i).toString().padStart(2, "0")}:00`);
+    }
+    return slots;
   }
 
-  function getEndTime(startTime: string) {
-    const hour = parseInt(startTime.split(":")[0]) + 1;
-    return `${hour.toString().padStart(2, "0")}:00`;
+  function getMaxHoursFrom(start: string, available: string[]): number {
+    const startHour = parseInt(start.split(":")[0]);
+    let max = 0;
+    for (let i = 0; i < 12; i++) {
+      const slot = `${(startHour + i).toString().padStart(2, "0")}:00`;
+      if (!available.includes(slot)) break;
+      max++;
+    }
+    return max;
   }
+
+  // Update selectedSlots when start or hours change
+  useEffect(() => {
+    if (selectedStart && selectedHours >= 3) {
+      setSelectedSlots(getSlotsFromStart(selectedStart, selectedHours));
+    } else {
+      setSelectedSlots([]);
+    }
+  }, [selectedStart, selectedHours]);
+
+
 
   async function handleWhatsApp() {
     const space = SPACES.find((s) => s.key === selectedSpace);
@@ -313,15 +335,12 @@ export default function ReservarPage() {
       // Si falla la API, igual abrimos WhatsApp
     }
 
-    const slotsText = selectedSlots
-      .sort()
-      .map((s) => `${s} a ${getEndTime(s)}`)
-      .join(", ");
+    const endTime = `${(parseInt(selectedStart.split(":")[0]) + selectedHours).toString().padStart(2, "0")}:00`;
     const msg = encodeURIComponent(
       `Hola Andrea! Quiero reservar un turno en cowork.arquita:\n\n` +
         `Espacio: ${space?.name}\n` +
         `Fecha: ${formatDateDisplay(selectedDate)}\n` +
-        `Horarios: ${slotsText}\n` +
+        `Horario: ${selectedStart} a ${endTime} (${selectedHours} horas)\n` +
         `Nombre: ${formData.name}\n` +
         `Telefono: ${formData.phone}\n` +
         (formData.notes ? `Notas: ${formData.notes}\n` : "")
@@ -344,7 +363,7 @@ export default function ReservarPage() {
         <div className="container-custom">
           <h1 className="text-3xl font-bold mb-2">Reservar turno</h1>
           <p className="text-gray-300">
-            Seleccioná tu espacio, día y horario. Se atiende siempre con cita previa.
+            Seleccioná tu espacio, día y horario. Se trabaja con reserva anticipada (mínimo 3 horas).
           </p>
         </div>
       </section>
@@ -465,6 +484,8 @@ export default function ReservarPage() {
                   value={selectedDate}
                   onChange={(dateStr) => {
                     setSelectedDate(dateStr);
+                    setSelectedStart("");
+                    setSelectedHours(3);
                     setSelectedSlots([]);
                   }}
                   saturdaysOnly={isHolistica}
@@ -481,14 +502,7 @@ export default function ReservarPage() {
               <div>
                 <label className="label flex items-center gap-2 mb-3">
                   <Clock className="h-4 w-4" />
-                  Horarios disponibles
-                  {selectedSlots.length > 0 && (
-                    <span className="text-teal-600 text-xs font-normal">
-                      ({selectedSlots.length}{" "}
-                      {selectedSlots.length === 1 ? "hora" : "horas"}{" "}
-                      seleccionada{selectedSlots.length === 1 ? "" : "s"})
-                    </span>
-                  )}
+                  Horario y duración
                 </label>
                 {!selectedDate ? (
                   <p className="text-gray-400 text-sm py-4">
@@ -501,37 +515,106 @@ export default function ReservarPage() {
                     <p className="text-sm">Elegí otro día</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                    {timeSlots.map((slot) => {
-                      const isBlocked = allBlockedSlots.includes(slot);
-                      const blockReason = blockedInfo.find((b) =>
-                        b.slots.includes(slot)
-                      )?.reason;
-                      const isSelected = selectedSlots.includes(slot);
-                      return (
-                        <button
-                          key={slot}
-                          disabled={isBlocked}
-                          onClick={() => toggleSlot(slot)}
-                          title={isBlocked ? blockReason : undefined}
-                          className={`py-2.5 px-3 rounded-lg text-sm font-medium transition-all ${
-                            isBlocked
-                              ? "bg-gray-100 text-gray-400 cursor-not-allowed line-through"
-                              : isSelected
-                                ? "bg-teal-600 text-white ring-2 ring-teal-600 ring-offset-1"
-                                : "bg-white border border-gray-300 hover:border-teal-400 hover:bg-teal-50"
-                          }`}
-                        >
-                          {slot}
-                        </button>
-                      );
-                    })}
+                  <div className="space-y-4">
+                    {/* Hora de inicio */}
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-2 block">
+                        Hora de inicio
+                      </label>
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                        {timeSlots.map((slot) => {
+                          const isBlocked = allBlockedSlots.includes(slot);
+                          const maxFromHere = getMaxHoursFrom(
+                            slot,
+                            timeSlots.filter((s) => !allBlockedSlots.includes(s))
+                          );
+                          const notEnough = maxFromHere < 3;
+                          const disabled = isBlocked || notEnough;
+                          const isSelected = selectedStart === slot;
+                          return (
+                            <button
+                              key={slot}
+                              disabled={disabled}
+                              onClick={() => {
+                                setSelectedStart(slot);
+                                const max = getMaxHoursFrom(
+                                  slot,
+                                  timeSlots.filter((s) => !allBlockedSlots.includes(s))
+                                );
+                                setSelectedHours(Math.min(3, max));
+                              }}
+                              title={
+                                isBlocked
+                                  ? "Horario reservado"
+                                  : notEnough
+                                    ? "No hay 3 horas consecutivas disponibles desde acá"
+                                    : undefined
+                              }
+                              className={`py-2.5 px-3 rounded-lg text-sm font-medium transition-all ${
+                                disabled
+                                  ? "bg-gray-100 text-gray-400 cursor-not-allowed line-through"
+                                  : isSelected
+                                    ? "bg-teal-600 text-white ring-2 ring-teal-600 ring-offset-1"
+                                    : "bg-white border border-gray-300 hover:border-teal-400 hover:bg-teal-50"
+                              }`}
+                            >
+                              {slot}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Cantidad de horas */}
+                    {selectedStart && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-700 mb-2 block">
+                          Cantidad de horas (mínimo 3)
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <button
+                            disabled={selectedHours <= 3}
+                            onClick={() => setSelectedHours(selectedHours - 1)}
+                            className="w-10 h-10 rounded-lg border border-gray-300 flex items-center justify-center text-lg font-bold hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            -
+                          </button>
+                          <span className="text-2xl font-bold text-teal-600 w-12 text-center">
+                            {selectedHours}
+                          </span>
+                          <button
+                            disabled={
+                              selectedHours >=
+                              getMaxHoursFrom(
+                                selectedStart,
+                                timeSlots.filter((s) => !allBlockedSlots.includes(s))
+                              )
+                            }
+                            onClick={() => setSelectedHours(selectedHours + 1)}
+                            className="w-10 h-10 rounded-lg border border-gray-300 flex items-center justify-center text-lg font-bold hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            +
+                          </button>
+                          <span className="text-sm text-gray-500">
+                            {selectedStart} a{" "}
+                            {`${(parseInt(selectedStart.split(":")[0]) + selectedHours).toString().padStart(2, "0")}:00`}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Resumen visual */}
+                    {selectedStart && selectedSlots.length >= 3 && (
+                      <div className="bg-teal-50 rounded-lg p-3 text-sm text-teal-800">
+                        Reserva de <strong>{selectedHours} horas</strong>: {selectedStart} a{" "}
+                        {`${(parseInt(selectedStart.split(":")[0]) + selectedHours).toString().padStart(2, "0")}:00`}
+                      </div>
+                    )}
+
+                    <p className="text-xs text-gray-400">
+                      Reserva mínima: 3 horas. Los horarios tachados no están disponibles.
+                    </p>
                   </div>
-                )}
-                {selectedDate && dayOfWeek !== 0 && (
-                  <p className="text-xs text-gray-400 mt-2">
-                    Podés seleccionar múltiples horarios. Los tachados no están disponibles.
-                  </p>
                 )}
               </div>
             </div>
@@ -544,7 +627,7 @@ export default function ReservarPage() {
                 <ArrowLeft className="h-4 w-4" /> Atrás
               </button>
               <button
-                disabled={!selectedDate || selectedSlots.length === 0}
+                disabled={!selectedDate || selectedSlots.length < 3}
                 onClick={() => setStep(3)}
                 className="bg-teal-600 text-white px-6 py-3 rounded-lg hover:bg-teal-700 transition font-medium disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-2"
               >
@@ -572,11 +655,10 @@ export default function ReservarPage() {
                   {formatDateDisplay(selectedDate)}
                 </p>
                 <p>
-                  <span className="font-medium">Horarios:</span>{" "}
-                  {selectedSlots
-                    .sort()
-                    .map((s) => `${s} a ${getEndTime(s)}`)
-                    .join(", ")}
+                  <span className="font-medium">Horario:</span>{" "}
+                  {selectedStart} a{" "}
+                  {`${(parseInt(selectedStart.split(":")[0]) + selectedHours).toString().padStart(2, "0")}:00`}{" "}
+                  ({selectedHours} horas)
                 </p>
               </div>
             </div>

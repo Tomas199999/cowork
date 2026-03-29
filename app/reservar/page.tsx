@@ -17,7 +17,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-const WHATSAPP_ANDREA = "5491158846186";
+const WHATSAPP_ANDREA = "5491132922737";
 
 const SPACES = [
   {

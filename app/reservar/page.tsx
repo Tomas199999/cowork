@@ -326,7 +326,7 @@ function ReservarContent() {
 
     const endTime = `${(parseInt(selectedStart.split(":")[0]) + selectedHours).toString().padStart(2, "0")}:00`;
     const msg = encodeURIComponent(
-      `Hola Andrea! Quiero reservar un turno en cowork.arquita:\n\n` +
+      `Hola Andrea! Quiero reservar un turno en espaciosarquita:\n\n` +
         `Espacio: ${space?.name}\n` +
         `Fecha: ${formatDateDisplay(selectedDate)}\n` +
         `Horario: ${selectedStart} a ${endTime} (${selectedHours} horas)\n` +
@@ -473,8 +473,7 @@ function ReservarContent() {
                             slot,
                             timeSlots.filter((s) => !allBlockedSlots.includes(s))
                           );
-                          const notEnough = maxFromHere < 3;
-                          const disabled = isBlocked || notEnough;
+                          const disabled = isBlocked || maxFromHere === 0;
                           const isSelected = selectedStart === slot;
                           return (
                             <button
@@ -488,13 +487,7 @@ function ReservarContent() {
                                 );
                                 setSelectedHours(Math.min(3, max));
                               }}
-                              title={
-                                isBlocked
-                                  ? "Horario reservado"
-                                  : notEnough
-                                    ? "No hay 3 horas consecutivas disponibles desde acá"
-                                    : undefined
-                              }
+                              title={isBlocked ? "Horario no disponible" : undefined}
                               className={`py-2.5 px-3 rounded-lg text-sm font-medium transition-all ${
                                 disabled
                                   ? "bg-gray-100 text-gray-400 cursor-not-allowed line-through"
@@ -504,6 +497,11 @@ function ReservarContent() {
                               }`}
                             >
                               {slot}
+                              {!isBlocked && maxFromHere > 0 && maxFromHere < 3 && (
+                                <span className="block text-[10px] text-amber-600">
+                                  máx {maxFromHere}h
+                                </span>
+                              )}
                             </button>
                           );
                         })}
@@ -511,7 +509,19 @@ function ReservarContent() {
                     </div>
 
                     {/* Cantidad de horas */}
-                    {selectedStart && (
+                    {selectedStart && (() => {
+                      const maxHrs = getMaxHoursFrom(
+                        selectedStart,
+                        timeSlots.filter((s) => !allBlockedSlots.includes(s))
+                      );
+                      if (maxHrs < 3) {
+                        return (
+                          <div className="bg-amber-50 rounded-lg p-3 text-sm text-amber-700">
+                            Desde las {selectedStart} solo hay {maxHrs} hora{maxHrs > 1 ? "s" : ""} disponible{maxHrs > 1 ? "s" : ""} (mínimo 3). Probá con otro horario.
+                          </div>
+                        );
+                      }
+                      return (
                       <div>
                         <label className="text-sm font-medium text-gray-700 mb-2 block">
                           Cantidad de horas (mínimo 3)
@@ -546,24 +556,20 @@ function ReservarContent() {
                           </span>
                         </div>
                       </div>
-                    )}
+                      );
+                    })()}
 
                     {/* Resumen visual */}
-                    {selectedStart && selectedSlots.length >= 3 && (
+                    {selectedStart && selectedSlots.length > 0 && (
                       <div className="bg-teal-50 rounded-lg p-3 text-sm text-teal-800">
-                        Reserva de <strong>{selectedHours} horas</strong>: {selectedStart} a{" "}
+                        Reserva de <strong>{selectedHours} hora{selectedHours > 1 ? "s" : ""}</strong>: {selectedStart} a{" "}
                         {`${(parseInt(selectedStart.split(":")[0]) + selectedHours).toString().padStart(2, "0")}:00`}
                       </div>
                     )}
 
                     <p className="text-xs text-gray-400">
-                      Reserva mínima: 3 horas. Los horarios tachados no están disponibles.
+                      Reserva sugerida: mínimo 3 horas. Los horarios tachados no están disponibles.
                     </p>
-                    {dayOfWeek === 3 && (
-                      <div className="bg-amber-50 rounded-lg p-3 text-xs text-amber-700 mt-2">
-                        Miércoles: Oficina Técnica ocupa de 15 a 19 hs. Último horario de inicio disponible: 12:00 (reserva hasta las 15:00).
-                      </div>
-                    )}
                   </div>
                 )}
               </div>

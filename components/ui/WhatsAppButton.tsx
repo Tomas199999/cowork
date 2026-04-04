@@ -32,7 +32,7 @@ export default function WhatsAppButton() {
           <div className="space-y-2">
             {PROFESSIONALS.map((p) => {
               const msg = encodeURIComponent(
-                `Hola ${p.name}! Me comunico desde la web de cowork.arquita.`
+                `Hola ${p.name}! Me comunico desde la web de espaciosarquita.`
               );
               return (
                 <a

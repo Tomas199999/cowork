@@ -13,7 +13,7 @@ const geistSans = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "cowork.arquita - Multiespacio Profesional",
+  title: "espaciosarquita - Multiespacio Profesional",
   description:
     "Multiespacio profesional donde conviven profesionales tecnicos, especialistas en terapias y espacio para la creacion y el arte. Coworking, oficina tecnica y servicios de arquitectura en Buenos Aires.",
   keywords: [

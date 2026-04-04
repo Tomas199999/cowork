@@ -13,7 +13,7 @@ export default function LoginPage() {
           </div>
           <h1 className="text-3xl font-bold">Ingresar</h1>
           <p className="text-gray-600 mt-2">
-            Accede a tu cuenta de cowork.arquita
+            Accede a tu cuenta de espaciosarquita
           </p>
         </div>
 

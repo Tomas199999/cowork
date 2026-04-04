@@ -13,7 +13,7 @@ export default function RegistroPage() {
           </div>
           <h1 className="text-3xl font-bold">Crear cuenta</h1>
           <p className="text-gray-600 mt-2">
-            Unite al multiespacio profesional cowork.arquita
+            Unite al multiespacio profesional espaciosarquita
           </p>
         </div>
 

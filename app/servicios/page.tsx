@@ -16,7 +16,7 @@ import {
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Servicios - cowork.arquita",
+  title: "Servicios - espaciosarquita",
   description:
     "Servicios de electricidad, arquitectura, construccion, seguridad e higiene, planos, habilitaciones, puesta a tierra, DCI e instalaciones.",
 };

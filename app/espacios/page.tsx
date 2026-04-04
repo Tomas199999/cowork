@@ -16,7 +16,7 @@ import {
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Espacios - cowork.arquita",
+  title: "Espacios - espaciosarquita",
   description:
     "Alquiler de espacios de trabajo en modulos horarios: oficina, aula taller, gabinete y consultorio. Coworking profesional en Buenos Aires.",
 };

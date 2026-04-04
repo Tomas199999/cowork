@@ -10,7 +10,7 @@ export default function Footer() {
             <div className="flex items-center gap-2 mb-4">
               <Building className="h-6 w-6 text-teal-500" />
               <span className="text-lg font-bold text-white">
-                cowork<span className="text-teal-400">.arquita</span>
+                espacios<span className="text-teal-400">arquita</span>
               </span>
             </div>
             <p className="text-sm text-gray-400">
@@ -92,7 +92,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-500">
-          &copy; {new Date().getFullYear()} cowork.arquita. Todos los derechos
+          &copy; {new Date().getFullYear()} espaciosarquita. Todos los derechos
           reservados.
         </div>
       </div>

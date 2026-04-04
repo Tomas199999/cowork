@@ -15,7 +15,7 @@ export default function Header() {
             <Building className="h-7 w-7 text-teal-600" />
             <div className="flex flex-col leading-tight">
               <span className="text-lg font-bold text-gray-900">
-                cowork<span className="text-teal-600">.arquita</span>
+                espacios<span className="text-teal-600">arquita</span>
               </span>
             </div>
           </Link>

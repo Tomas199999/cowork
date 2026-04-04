@@ -68,7 +68,7 @@ export default function AdminPage() {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              if (password === "cowork2026") {
+              if (password === "1926") {
                 setAuthenticated(true);
               } else {
                 alert("Contraseña incorrecta");

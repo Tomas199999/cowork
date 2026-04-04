@@ -15,33 +15,50 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const startOfDay = new Date(date + "T00:00:00");
-    const endOfDay = new Date(date + "T23:59:59");
+    const spaceTypeUpper = spaceType.toUpperCase();
 
     // Find spaces of the given type
     const spaces = await prisma.space.findMany({
-      where: {
-        type: spaceType.toUpperCase() as any,
-      },
+      where: { type: spaceTypeUpper },
       select: { id: true },
     });
 
     const spaceIds = spaces.map((s) => s.id);
 
-    // Find bookings for those spaces on the given date
+    if (spaceIds.length === 0) {
+      return NextResponse.json({ bookedSlots: [] });
+    }
+
+    // Wide range to handle timezone differences (Argentina is UTC-3)
+    const dayBefore = new Date(date + "T00:00:00.000Z");
+    dayBefore.setDate(dayBefore.getDate() - 1);
+    const dayAfter = new Date(date + "T23:59:59.999Z");
+    dayAfter.setDate(dayAfter.getDate() + 1);
+
     const bookings = await prisma.booking.findMany({
       where: {
         spaceId: { in: spaceIds },
         date: {
-          gte: startOfDay,
-          lte: endOfDay,
+          gte: dayBefore,
+          lte: dayAfter,
         },
         status: { not: "CANCELLED" },
       },
-      select: { startTime: true },
+      select: { startTime: true, date: true },
     });
 
-    const bookedSlots = bookings.map((b) => b.startTime);
+    // Filter bookings that match the requested date (handle timezone)
+    const requestedDate = date; // "YYYY-MM-DD"
+    const filteredBookings = bookings.filter((b) => {
+      const bDate = new Date(b.date);
+      const bDateStr = bDate.toISOString().split("T")[0];
+      // Also check with timezone offset for Argentina (UTC-3)
+      const bDateLocal = new Date(bDate.getTime() - 3 * 60 * 60 * 1000);
+      const bDateLocalStr = bDateLocal.toISOString().split("T")[0];
+      return bDateStr === requestedDate || bDateLocalStr === requestedDate;
+    });
+
+    const bookedSlots = filteredBookings.map((b) => b.startTime);
 
     return NextResponse.json({ bookedSlots });
   } catch (error) {
@@ -66,10 +83,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const spaceTypeUpper = spaceType.toUpperCase();
+
     // Find a space of the given type
     let space = await prisma.space.findFirst({
       where: {
-        type: spaceType.toUpperCase() as any,
+        type: spaceTypeUpper,
         available: true,
       },
     });
@@ -79,13 +98,13 @@ export async function POST(req: NextRequest) {
       const spaceNames: Record<string, string> = {
         oficina: "Oficina",
         aula_taller: "Aula Taller",
-        gabinete: "Gabinete",
-        consultorio: "Consultorio",
+        gabinete_consultorio: "Gabinete/Consultorio",
+        holistica: "Holística",
       };
       space = await prisma.space.create({
         data: {
           name: spaceNames[spaceType] || spaceType,
-          type: spaceType.toUpperCase() as any,
+          type: spaceTypeUpper,
           description: `Espacio de ${spaceNames[spaceType] || spaceType}`,
           capacity: 1,
           pricePerHour: 0,
@@ -93,13 +112,19 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const bookingDate = new Date(date + "T00:00:00");
+    const bookingDate = new Date(date + "T12:00:00.000Z");
 
-    // Check for conflicts
+    // Check for conflicts - wide range to handle timezone
+    const startOfDay = new Date(date + "T00:00:00.000Z");
+    const endOfDay = new Date(date + "T23:59:59.999Z");
+
     const existing = await prisma.booking.findMany({
       where: {
         spaceId: space.id,
-        date: bookingDate,
+        date: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
         startTime: { in: slots },
         status: { not: "CANCELLED" },
       },

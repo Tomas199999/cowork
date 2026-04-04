@@ -40,20 +40,6 @@ export default function AdminPage() {
     setLoading(false);
   }
 
-  async function deleteBooking(id: string) {
-    if (!confirm("¿Seguro que querés eliminar esta reserva?")) return;
-    try {
-      const res = await fetch(`/api/admin/bookings?id=${id}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        setBookings(bookings.filter((b) => b.id !== id));
-      }
-    } catch {
-      // error
-    }
-  }
-
   useEffect(() => {
     if (authenticated) {
       fetchBookings();
@@ -105,10 +91,55 @@ export default function AdminPage() {
     });
   }
 
-  // Group bookings by date
+  // Group consecutive bookings from same client into one entry
+  interface GroupedBooking {
+    ids: string[];
+    startTime: string;
+    endTime: string;
+    clientName: string;
+    clientPhone: string;
+    notes: string | null;
+    spaceName: string;
+  }
+
+  function groupConsecutive(dayBookings: Booking[]): GroupedBooking[] {
+    const sorted = [...dayBookings].sort((a, b) => a.startTime.localeCompare(b.startTime));
+    const groups: GroupedBooking[] = [];
+
+    for (const b of sorted) {
+      const last = groups[groups.length - 1];
+      if (
+        last &&
+        last.clientName === b.clientName &&
+        last.clientPhone === b.clientPhone &&
+        last.spaceName === (b.space?.name || "Espacio") &&
+        last.endTime === b.startTime
+      ) {
+        last.ids.push(b.id);
+        last.endTime = b.endTime;
+      } else {
+        groups.push({
+          ids: [b.id],
+          startTime: b.startTime,
+          endTime: b.endTime,
+          clientName: b.clientName,
+          clientPhone: b.clientPhone,
+          notes: b.notes,
+          spaceName: b.space?.name || "Espacio",
+        });
+      }
+    }
+    return groups;
+  }
+
+  // Group bookings by date (use T12:00 stored dates, extract date part)
   const grouped = bookings.reduce(
     (acc, b) => {
-      const dateKey = b.date.split("T")[0];
+      // Handle timezone: stored as UTC, display as Argentina time
+      const d = new Date(b.date);
+      const dateKey = new Date(d.getTime() - 3 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0];
       if (!acc[dateKey]) acc[dateKey] = [];
       acc[dateKey].push(b);
       return acc;
@@ -143,46 +174,53 @@ export default function AdminPage() {
                   {formatDate(dateKey)}
                 </h2>
                 <div className="space-y-3">
-                  {grouped[dateKey]
-                    .sort((a, b) => a.startTime.localeCompare(b.startTime))
-                    .map((booking) => (
+                  {groupConsecutive(grouped[dateKey]).map((group) => {
+                    const hours = group.ids.length;
+                    return (
                       <div
-                        key={booking.id}
+                        key={group.ids[0]}
                         className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between"
                       >
                         <div className="flex flex-wrap items-center gap-4 text-sm">
                           <div className="flex items-center gap-1.5">
                             <Clock className="h-4 w-4 text-gray-400" />
                             <span className="font-medium">
-                              {booking.startTime} - {booking.endTime}
+                              {group.startTime} - {group.endTime} ({hours}h)
                             </span>
                           </div>
                           <div className="flex items-center gap-1.5">
                             <MapPin className="h-4 w-4 text-gray-400" />
-                            <span>{booking.space?.name || "Espacio"}</span>
+                            <span>{group.spaceName}</span>
                           </div>
                           <div className="flex items-center gap-1.5">
                             <User className="h-4 w-4 text-gray-400" />
-                            <span>{booking.clientName}</span>
+                            <span>{group.clientName}</span>
                           </div>
                           <span className="text-gray-400">
-                            {booking.clientPhone}
+                            {group.clientPhone}
                           </span>
-                          {booking.notes && (
+                          {group.notes && (
                             <span className="text-gray-400 italic">
-                              {booking.notes}
+                              {group.notes}
                             </span>
                           )}
                         </div>
                         <button
-                          onClick={() => deleteBooking(booking.id)}
+                          onClick={async () => {
+                            if (!confirm("¿Seguro que querés eliminar esta reserva?")) return;
+                            for (const id of group.ids) {
+                              await fetch(`/api/admin/bookings?id=${id}`, { method: "DELETE" });
+                            }
+                            setBookings(bookings.filter((b) => !group.ids.includes(b.id)));
+                          }}
                           className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
                           title="Eliminar reserva"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
-                    ))}
+                    );
+                  })}
                 </div>
               </div>
             ))}

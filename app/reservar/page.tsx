@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Briefcase,
   Users,
@@ -49,20 +50,7 @@ const SPACES = [
   },
 ];
 
-const colorClasses: Record<string, { selected: string; hover: string }> = {
-  teal: {
-    selected: "border-teal-500 bg-teal-50 ring-2 ring-teal-500",
-    hover: "hover:border-teal-300",
-  },
-  amber: {
-    selected: "border-amber-500 bg-amber-50 ring-2 ring-amber-500",
-    hover: "hover:border-amber-300",
-  },
-  purple: {
-    selected: "border-purple-500 bg-purple-50 ring-2 ring-purple-500",
-    hover: "hover:border-purple-300",
-  },
-};
+
 
 function getToday() {
   const d = new Date();
@@ -228,7 +216,15 @@ function getDayNote(dayOfWeek: number): string | null {
 }
 
 export default function ReservarPage() {
-  const [step, setStep] = useState(1);
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <ReservarContent />
+    </Suspense>
+  );
+}
+
+function ReservarContent() {
+  const [step, setStep] = useState(1); // 1 = día/horario, 2 = confirmar WhatsApp
   const [selectedSpace, setSelectedSpace] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedStart, setSelectedStart] = useState<string>("");
@@ -260,15 +256,20 @@ export default function ReservarPage() {
     fetchBookings();
   }, [selectedSpace, selectedDate]);
 
-  // Read espacio from URL on mount
+  const searchParams = useSearchParams();
+
+  // Read espacio from URL and react to changes
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const espacio = params.get("espacio");
+    const espacio = searchParams.get("espacio");
     if (espacio && SPACES.some((s) => s.key === espacio)) {
       setSelectedSpace(espacio);
-      setStep(2);
+      setSelectedDate("");
+      setSelectedStart("");
+      setSelectedHours(3);
+      setSelectedSlots([]);
+      setStep(1);
     }
-  }, []);
+  }, [searchParams]);
 
   function getSlotsFromStart(start: string, hours: number): string[] {
     const startHour = parseInt(start.split(":")[0]);
@@ -376,9 +377,8 @@ export default function ReservarPage() {
         <div className="container-custom py-4">
           <div className="flex items-center gap-4">
             {[
-              { num: 1, label: "Espacio" },
-              { num: 2, label: "Día y horario" },
-              { num: 3, label: "Confirmar por WhatsApp" },
+              { num: 1, label: "Día y horario" },
+              { num: 2, label: "Confirmar por WhatsApp" },
             ].map((s, i) => (
               <div key={s.num} className="flex items-center gap-2">
                 {i > 0 && (
@@ -411,51 +411,8 @@ export default function ReservarPage() {
       </div>
 
       <div className="container-custom py-8">
-        {/* Step 1: Select space */}
+        {/* Step 1: Select date and time */}
         {step === 1 && (
-          <div>
-            <h2 className="text-xl font-bold mb-6">
-              ¿Qué tipo de espacio necesitás?
-            </h2>
-            <div className="grid sm:grid-cols-2 gap-4">
-              {SPACES.map((space) => {
-                const colors = colorClasses[space.color];
-                const isSelected = selectedSpace === space.key;
-                return (
-                  <button
-                    key={space.key}
-                    onClick={() => setSelectedSpace(space.key)}
-                    className={`card p-6 text-left transition-all ${
-                      isSelected ? colors.selected : colors.hover
-                    }`}
-                  >
-                    <div className="flex items-start gap-4">
-                      <space.icon
-                        className={`h-8 w-8 flex-shrink-0 ${isSelected ? "text-gray-900" : "text-gray-400"}`}
-                      />
-                      <div>
-                        <h3 className="font-bold text-lg">{space.name}</h3>
-                        <p className="text-gray-600 text-sm">{space.desc}</p>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            <div className="flex justify-end mt-8">
-              <button
-                disabled={!selectedSpace}
-                onClick={() => setStep(2)}
-                className="bg-teal-600 text-white px-6 py-3 rounded-lg hover:bg-teal-700 transition font-medium disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-2"
-              >
-                Siguiente <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Select date and time */}
-        {step === 2 && (
           <div>
             <h2 className="text-xl font-bold mb-6">
               Elegí día y horario
@@ -607,16 +564,10 @@ export default function ReservarPage() {
               </div>
             </div>
 
-            <div className="flex justify-between mt-8">
-              <button
-                onClick={() => setStep(1)}
-                className="text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-100 transition font-medium inline-flex items-center gap-2"
-              >
-                <ArrowLeft className="h-4 w-4" /> Atrás
-              </button>
+            <div className="flex justify-end mt-8">
               <button
                 disabled={!selectedDate || selectedSlots.length < 3}
-                onClick={() => setStep(3)}
+                onClick={() => setStep(2)}
                 className="bg-teal-600 text-white px-6 py-3 rounded-lg hover:bg-teal-700 transition font-medium disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-2"
               >
                 Siguiente <ArrowRight className="h-4 w-4" />
@@ -625,8 +576,8 @@ export default function ReservarPage() {
           </div>
         )}
 
-        {/* Step 3: Confirm and send WhatsApp */}
-        {step === 3 && (
+        {/* Step 2: Confirm and send WhatsApp */}
+        {step === 2 && (
           <div>
             <h2 className="text-xl font-bold mb-6">Confirmá y enviá por WhatsApp</h2>
 
@@ -701,7 +652,7 @@ export default function ReservarPage() {
               <div className="flex justify-between pt-4">
                 <button
                   type="button"
-                  onClick={() => setStep(2)}
+                  onClick={() => setStep(1)}
                   className="text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-100 transition font-medium inline-flex items-center gap-2"
                 >
                   <ArrowLeft className="h-4 w-4" /> Atrás

@@ -5,7 +5,6 @@ import {
   Briefcase,
   Users,
   Heart,
-  Sparkles,
   ArrowRight,
   ArrowLeft,
   CheckCircle2,
@@ -35,18 +34,11 @@ const SPACES = [
     color: "amber",
   },
   {
-    key: "gabinete",
+    key: "gabinete_consultorio",
     icon: Heart,
-    name: "Gabinete",
-    desc: "Terapias y sesiones privadas",
+    name: "Gabinete/Consultorio",
+    desc: "Terapias, sesiones privadas y consultas",
     color: "purple",
-  },
-  {
-    key: "consultorio",
-    icon: Sparkles,
-    name: "Consultorio",
-    desc: "Consultas y terapias alternativas",
-    color: "rose",
   },
   {
     key: "holistica",
@@ -69,10 +61,6 @@ const colorClasses: Record<string, { selected: string; hover: string }> = {
   purple: {
     selected: "border-purple-500 bg-purple-50 ring-2 ring-purple-500",
     hover: "hover:border-purple-300",
-  },
-  rose: {
-    selected: "border-rose-500 bg-rose-50 ring-2 ring-rose-500",
-    hover: "hover:border-rose-300",
   },
 };
 

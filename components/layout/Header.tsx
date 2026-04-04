@@ -29,22 +29,34 @@ export default function Header() {
 
           <nav className="hidden md:flex items-center gap-8">
             <Link
-              href="/espacios"
+              href="/reservar?espacio=oficina"
               className="text-gray-600 hover:text-gray-900 transition"
             >
-              Espacios
+              Oficina
+            </Link>
+            <Link
+              href="/reservar?espacio=aula_taller"
+              className="text-gray-600 hover:text-gray-900 transition"
+            >
+              Aula Taller
+            </Link>
+            <Link
+              href="/reservar?espacio=gabinete_consultorio"
+              className="text-gray-600 hover:text-gray-900 transition"
+            >
+              Gabinete/Consultorio
+            </Link>
+            <Link
+              href="/reservar?espacio=holistica"
+              className="text-gray-600 hover:text-gray-900 transition"
+            >
+              Holística
             </Link>
             <Link
               href="/servicios"
               className="text-gray-600 hover:text-gray-900 transition"
             >
-              Servicios
-            </Link>
-            <Link
-              href="/reservar"
-              className="text-gray-600 hover:text-gray-900 transition"
-            >
-              Reservar turno
+              Oficina técnica
             </Link>
             {session ? (
               <div className="flex items-center gap-4">
@@ -96,25 +108,39 @@ export default function Header() {
           <div className="md:hidden py-4 border-t border-gray-100">
             <nav className="flex flex-col gap-3">
               <Link
-                href="/espacios"
+                href="/reservar?espacio=oficina"
                 className="text-gray-600 hover:text-gray-900 py-2"
                 onClick={() => setMenuOpen(false)}
               >
-                Espacios
+                Oficina
+              </Link>
+              <Link
+                href="/reservar?espacio=aula_taller"
+                className="text-gray-600 hover:text-gray-900 py-2"
+                onClick={() => setMenuOpen(false)}
+              >
+                Aula Taller
+              </Link>
+              <Link
+                href="/reservar?espacio=gabinete_consultorio"
+                className="text-gray-600 hover:text-gray-900 py-2"
+                onClick={() => setMenuOpen(false)}
+              >
+                Gabinete/Consultorio
+              </Link>
+              <Link
+                href="/reservar?espacio=holistica"
+                className="text-gray-600 hover:text-gray-900 py-2"
+                onClick={() => setMenuOpen(false)}
+              >
+                Holística
               </Link>
               <Link
                 href="/servicios"
                 className="text-gray-600 hover:text-gray-900 py-2"
                 onClick={() => setMenuOpen(false)}
               >
-                Servicios
-              </Link>
-              <Link
-                href="/reservar"
-                className="text-gray-600 hover:text-gray-900 py-2"
-                onClick={() => setMenuOpen(false)}
-              >
-                Reservar turno
+                Oficina técnica
               </Link>
               {session ? (
                 <>

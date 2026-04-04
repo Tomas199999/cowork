@@ -559,6 +559,11 @@ function ReservarContent() {
                     <p className="text-xs text-gray-400">
                       Reserva mínima: 3 horas. Los horarios tachados no están disponibles.
                     </p>
+                    {dayOfWeek === 3 && (
+                      <div className="bg-amber-50 rounded-lg p-3 text-xs text-amber-700 mt-2">
+                        Miércoles: Oficina Técnica ocupa de 15 a 19 hs. Último horario de inicio disponible: 12:00 (reserva hasta las 15:00).
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

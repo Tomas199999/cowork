@@ -2,17 +2,10 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useSession, signOut } from "next-auth/react";
-import { Menu, X, User, LogOut, Building } from "lucide-react";
+import { Menu, X, Building, Lock } from "lucide-react";
 
 export default function Header() {
-  const { data: session } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
-
-  const dashboardLink =
-    (session?.user as any)?.role === "PROFESSIONAL"
-      ? "/dashboard/profesional"
-      : "/dashboard/cliente";
 
   return (
     <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
@@ -28,6 +21,18 @@ export default function Header() {
           </Link>
 
           <nav className="hidden md:flex items-center gap-8">
+            <Link
+              href="/"
+              className="text-gray-600 hover:text-gray-900 transition"
+            >
+              Home
+            </Link>
+            <Link
+              href="/servicios"
+              className="text-gray-600 hover:text-gray-900 transition"
+            >
+              Oficina técnica
+            </Link>
             <Link
               href="/reservar?espacio=oficina"
               className="text-gray-600 hover:text-gray-900 transition"
@@ -53,43 +58,12 @@ export default function Header() {
               Holística
             </Link>
             <Link
-              href="/servicios"
-              className="text-gray-600 hover:text-gray-900 transition"
+              href="/admin"
+              className="flex items-center gap-1 text-gray-500 hover:text-gray-900 transition"
             >
-              Oficina técnica
+              <Lock className="h-4 w-4" />
+              Admin
             </Link>
-            {session ? (
-              <div className="flex items-center gap-4">
-                <Link
-                  href={dashboardLink}
-                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition"
-                >
-                  <User className="h-4 w-4" />
-                  {session.user?.name}
-                </Link>
-                <button
-                  onClick={() => signOut({ callbackUrl: "/" })}
-                  className="flex items-center gap-1 text-gray-500 hover:text-red-600 transition"
-                >
-                  <LogOut className="h-4 w-4" />
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <Link
-                  href="/login"
-                  className="text-gray-600 hover:text-gray-900 transition"
-                >
-                  Ingresar
-                </Link>
-                <Link
-                  href="/registro"
-                  className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition font-medium"
-                >
-                  Registrarse
-                </Link>
-              </div>
-            )}
           </nav>
 
           <button
@@ -107,6 +81,20 @@ export default function Header() {
         {menuOpen && (
           <div className="md:hidden py-4 border-t border-gray-100">
             <nav className="flex flex-col gap-3">
+              <Link
+                href="/"
+                className="text-gray-600 hover:text-gray-900 py-2"
+                onClick={() => setMenuOpen(false)}
+              >
+                Home
+              </Link>
+              <Link
+                href="/servicios"
+                className="text-gray-600 hover:text-gray-900 py-2"
+                onClick={() => setMenuOpen(false)}
+              >
+                Oficina técnica
+              </Link>
               <Link
                 href="/reservar?espacio=oficina"
                 className="text-gray-600 hover:text-gray-900 py-2"
@@ -136,46 +124,13 @@ export default function Header() {
                 Holística
               </Link>
               <Link
-                href="/servicios"
-                className="text-gray-600 hover:text-gray-900 py-2"
+                href="/admin"
+                className="flex items-center gap-1 text-gray-600 hover:text-gray-900 py-2"
                 onClick={() => setMenuOpen(false)}
               >
-                Oficina técnica
+                <Lock className="h-4 w-4" />
+                Admin
               </Link>
-              {session ? (
-                <>
-                  <Link
-                    href={dashboardLink}
-                    className="text-gray-600 hover:text-gray-900 py-2"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    Mi Panel
-                  </Link>
-                  <button
-                    onClick={() => signOut({ callbackUrl: "/" })}
-                    className="text-left text-red-600 py-2"
-                  >
-                    Cerrar sesion
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link
-                    href="/login"
-                    className="text-gray-600 hover:text-gray-900 py-2"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    Ingresar
-                  </Link>
-                  <Link
-                    href="/registro"
-                    className="bg-teal-600 text-white px-4 py-2 rounded-lg text-center hover:bg-teal-700 transition"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    Registrarse
-                  </Link>
-                </>
-              )}
             </nav>
           </div>
         )}

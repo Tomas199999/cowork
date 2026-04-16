@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   Building2,
   ShieldCheck,
@@ -110,18 +111,29 @@ export default function ServiciosPage() {
       {/* Dionicio Alejandro */}
       <section className="section">
         <div className="container-custom">
-          <div className="flex items-start gap-4 mb-8">
-            <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <Zap className="h-7 w-7 text-amber-600" />
+          <div className="flex items-start justify-between gap-4 mb-8">
+            <div className="flex items-start gap-4">
+              <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <Zap className="h-7 w-7 text-amber-600" />
+              </div>
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-bold">
+                  Dionicio Alejandro
+                </h2>
+                <p className="text-teal-600 font-medium">Tecnico superior matriculado</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  Matricula habilitante en CABA y Provincia de Buenos Aires
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-2xl sm:text-3xl font-bold">
-                Dionicio Alejandro
-              </h2>
-              <p className="text-teal-600 font-medium">Tecnico superior matriculado</p>
-              <p className="text-sm text-gray-500 mt-1">
-                Matricula habilitante en CABA y Provincia de Buenos Aires
-              </p>
+            <div className="hidden sm:block relative w-24 h-24 md:w-28 md:h-28 flex-shrink-0">
+              <Image
+                src="/dionicio-logo.jpeg"
+                alt="Logo de Dionicio Alejandro - Servicios e Instalaciones"
+                fill
+                className="object-contain"
+                sizes="112px"
+              />
             </div>
           </div>
 
@@ -138,6 +150,25 @@ export default function ServiciosPage() {
                 <p className="text-gray-600 text-sm">{s.desc}</p>
               </div>
             ))}
+          </div>
+
+          <div className="mt-10 bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+            <div className="grid md:grid-cols-5 gap-0">
+              <div className="md:col-span-3 relative bg-gray-50 aspect-[16/9] md:aspect-auto md:min-h-[320px]">
+                <Image
+                  src="/dionicio-instalacion.jpeg"
+                  alt="Diagrama de instalacion electrica con puesta a tierra y panel principal"
+                  fill
+                  className="object-contain p-4"
+                  sizes="(max-width: 768px) 100vw, 60vw"
+                />
+              </div>
+              <div className="md:col-span-2 p-6 md:p-8 flex flex-col justify-center">
+                <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-2">
+                  Ejemplo de trabajo
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="mt-8 bg-amber-50 border border-amber-200 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -193,6 +224,25 @@ export default function ServiciosPage() {
                 <p className="text-gray-600 text-sm">{s.desc}</p>
               </div>
             ))}
+          </div>
+
+          <div className="mt-10 bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+            <div className="grid md:grid-cols-5 gap-0">
+              <div className="md:col-span-3 relative bg-gray-50 aspect-[16/9] md:aspect-auto md:min-h-[320px]">
+                <Image
+                  src="/arq-andrea-planos.jpeg"
+                  alt="Ejemplo de planos arquitectonicos realizados por Arq. Andrea Ledesma"
+                  fill
+                  className="object-contain p-4"
+                  sizes="(max-width: 768px) 100vw, 60vw"
+                />
+              </div>
+              <div className="md:col-span-2 p-6 md:p-8 flex flex-col justify-center">
+                <p className="text-xs font-semibold text-teal-600 uppercase tracking-wider mb-2">
+                  Ejemplo de trabajo
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="mt-8 bg-teal-50 border border-teal-200 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

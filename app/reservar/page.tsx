@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import {
   Briefcase,
@@ -349,11 +350,24 @@ function ReservarContent() {
     <div>
       {/* Header */}
       <section className="bg-gradient-to-br from-gray-900 to-gray-800 text-white py-12">
-        <div className="container-custom">
-          <h1 className="text-3xl font-bold mb-2">Reservar turno</h1>
-          <p className="text-gray-300">
-            Seleccioná tu espacio, día y horario. Se trabaja con reserva anticipada (mínimo 3 horas).
-          </p>
+        <div className="container-custom flex items-center justify-between gap-6">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Reservar turno</h1>
+            <p className="text-gray-300">
+              Seleccioná tu espacio, día y horario. Se trabaja con reserva anticipada (mínimo 3 horas).
+            </p>
+          </div>
+          {isHolistica && (
+            <div className="hidden md:block relative w-28 h-28 lg:w-32 lg:h-32 flex-shrink-0 bg-white/5 rounded-full p-3">
+              <Image
+                src="/holistica.jpeg"
+                alt="Terapias holisticas"
+                fill
+                className="object-contain p-2 invert"
+                sizes="128px"
+              />
+            </div>
+          )}
         </div>
       </section>
 

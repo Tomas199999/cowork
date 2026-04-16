@@ -68,8 +68,8 @@ export default function Home() {
             </h1>
             <p className="text-lg sm:text-xl text-gray-300 mb-4 max-w-2xl">
               Multiespacio profesional donde conviven profesionales tecnicos,
-              especialistas en terapias clasicas y alternativas holisticas, y se
-              abre espacio para la creacion y el arte.
+              especialistas en terapias clasicas y alternativas holisticas,
+              dando lugar a la creatividad y al arte.
             </p>
             <p className="text-base text-gray-400 mb-8 max-w-2xl italic">
               El trabajo en comunidad y la integracion enriquecen los saberes y

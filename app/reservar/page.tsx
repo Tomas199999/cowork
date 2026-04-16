@@ -358,7 +358,7 @@ function ReservarContent() {
             </p>
           </div>
           {isHolistica && (
-            <div className="hidden md:block relative w-28 h-28 lg:w-32 lg:h-32 flex-shrink-0 bg-white/5 rounded-full p-3">
+            <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 flex-shrink-0 bg-white/5 rounded-full p-3">
               <Image
                 src="/holistica.jpeg"
                 alt="Terapias holisticas"

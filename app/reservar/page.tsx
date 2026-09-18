@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
+import { trackContactConversion } from "@/lib/gtag";
 import {
   Briefcase,
   Users,
@@ -335,6 +336,7 @@ function ReservarContent() {
         `Telefono: ${formData.phone}\n` +
         (formData.notes ? `Notas: ${formData.notes}\n` : "")
     );
+    trackContactConversion();
     window.open(`https://wa.me/${WHATSAPP_ANDREA}?text=${msg}`, "_blank");
     window.location.href = "/";
   }

@@ -5,6 +5,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import WhatsAppButton from "@/components/ui/WhatsAppButton";
 import Providers from "@/components/layout/Providers";
+import GoogleAds from "@/components/analytics/GoogleAds";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -36,6 +37,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={`${geistSans.variable} font-sans`}>
+        <GoogleAds />
         <Providers>
           <div className="flex flex-col min-h-screen">
             <Header />
